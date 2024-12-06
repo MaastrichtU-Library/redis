@@ -1,0 +1,38 @@
+name: Publish Docker image
+# To maastrichtu-library GitHub Container Registry
+# https://github.com/orgs/maastrichtu-library/packages 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+    - 'Dockerfile'
+    - '.github/workflows/publish-docker.yml'
+  schedule:
+    - cron: '0 4 * * 1'
+    # Monday at 4:00 GMT+1
+
+env:
+  IMAGE_PULLED: redis:latest
+  IMAGE_PUSHED: ghcr.io/maastrichtu-library/redis:latest
+
+jobs:
+  publish-latest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log into GitHub Container Registry   
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Pull image from DockerHub
+        run: docker pull $IMAGE_PULLED
+
+      - name: Push image to GitHub Container Registry
+        run: |
+          docker tag $IMAGE_PULLED $IMAGE_PUSHED
+          docker push $IMAGE_PUSHED
+
+      # - name: Build image
+      #   run: docker build . --file Dockerfile --tag $IMAGE_PUSHED
